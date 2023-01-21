@@ -27,8 +27,47 @@ func Example() {
 	<-debouncer.Done()
 }
 
+func ExampleNew() {
+	type myStruct struct {
+		Boolean bool
+		Integer int
+		String  string
+	}
+	debouncer := godebouncer.New(5 * time.Second).WithAny(func(myData any) {
+		fmt.Println(fmt.Printf("%#v", myData)) // Triggered func will be called after 5 seconds from last SendSignalWithData().
+	})
+
+	fmt.Println("Action 1")
+	debouncer.SendSignalWithData(&myStruct{
+		Boolean: false,
+		Integer: 5,
+		String:  "Will not show",
+	})
+
+	time.Sleep(1 * time.Second)
+
+	fmt.Println("Action 2")
+	debouncer.SendSignalWithData(&myStruct{
+		Boolean: true,
+		Integer: 5,
+		String:  "Will show because last one in wins!",
+	})
+
+	// After 5 seconds, the trigger will be called.
+	// Previous `SendSignal()` will be ignored to trigger the triggered function.
+	<-debouncer.Done()
+}
+
 func createIncrementCount(counter int) (*int, func()) {
 	return &counter, func() {
+		fmt.Println("Triggered")
+		counter++
+	}
+}
+
+func createIncrementCountAny(counter int) (*int, func(any)) {
+	return &counter, func(myData any) {
+		fmt.Println("Data", fmt.Sprintf("%#v", myData))
 		fmt.Println("Triggered")
 		counter++
 	}
@@ -113,6 +152,42 @@ func TestDebounceWithoutTriggeredFunc(t *testing.T) {
 	<-debouncer.Done()
 
 	fmt.Println("debouncer.Do() finished successfully!")
+}
+
+func TestMisconfigurationErrorSendSignalWithData(t *testing.T) {
+	_, incrementCount := createIncrementCountAny(0)
+	debouncer := godebouncer.New(200 * time.Millisecond).WithAny(incrementCount)
+
+	err := debouncer.SendSignal()
+	if err == nil {
+		t.Error("Error not returned")
+	}
+}
+
+func TestMisconfigurationErrorSendSignal(t *testing.T) {
+	_, incrementCount := createIncrementCount(0)
+	debouncer := godebouncer.New(200 * time.Millisecond).WithTriggered(incrementCount)
+
+	err := debouncer.SendSignalWithData("testing")
+	if err == nil {
+		t.Error("Error not returned")
+	}
+}
+
+func TestDebounceSendSignalWithData(t *testing.T) {
+	countPtr, incrementCount := createIncrementCountAny(0)
+	debouncer := godebouncer.New(200 * time.Millisecond).WithAny(incrementCount)
+	expectedCounter := int(1)
+
+	err := debouncer.SendSignalWithData("testing")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	<-debouncer.Done()
+
+	if *countPtr != expectedCounter {
+		t.Errorf("Expected count %d, was %d", expectedCounter, *countPtr)
+	}
 }
 
 func TestDebounceSendSignal(t *testing.T) {

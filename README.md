@@ -1,14 +1,14 @@
 # Go Debouncer
-[![Go Reference](https://pkg.go.dev/badge/github.com/vnteamopen/godebouncer.svg)](https://pkg.go.dev/github.com/vnteamopen/godebouncer) [![build](https://github.com/vnteamopen/godebouncer/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/vnteamopen/godebouncer/actions/workflows/build.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/vnteamopen/godebouncer)](https://goreportcard.com/report/github.com/vnteamopen/godebouncer) 
-[![Built with WeBuild](https://raw.githubusercontent.com/webuild-community/badge/master/svg/WeBuild.svg)](https://webuild.community) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vnteamopen/godebouncer/blob/main/LICENSE)
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/vnteamopen/godebouncer.svg)](https://pkg.go.dev/github.com/vnteamopen/godebouncer) [![build](https://github.com/vnteamopen/godebouncer/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/vnteamopen/godebouncer/actions/workflows/build.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/vnteamopen/godebouncer)](https://goreportcard.com/report/github.com/vnteamopen/godebouncer)
+[![Built with WeBuild](https://raw.githubusercontent.com/webuild-community/badge/master/svg/WeBuild.svg)](https://webuild.community) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/vnteamopen/godebouncer/blob/main/LICENSE)
 
 Go Debouncer is a Go language library. It makes sure that the pre-defined function is only triggered once per client's signals during a fixed duration.
 
 It allows creating a debouncer that delays invoking a triggered function until after the duration has elapsed since the last time the SendSingal was invoked.
 
- - Official page: https://godebouncer.vnteamopen.com
- - A product from https://vnteamopen.com
+- Official page: https://godebouncer.vnteamopen.com
+- A product from https://vnteamopen.com
 
 ![GoDebouncer_drawio](https://user-images.githubusercontent.com/1828895/164943072-093b22e6-6471-4d2e-93bb-8fd08f2e4953.png)
 
@@ -131,6 +131,50 @@ debouncer.SendSignal()
 fmt.Println("After done")
 ```
 
+## Pass any to your function
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/DanielRenne/GoCore/core/debouncer"
+)
+
+func main() {
+	type myStruct struct {
+		Boolean bool
+		Integer int
+		String string
+	}
+	d := debouncer.New(5 * time.Second).WithAny(func(myData any) {
+		fmt.Printf("%#v", myData) // Triggered func will be called after 5 seconds from last SendSignal().
+	})
+
+	fmt.Println("Action 1")
+	d.SendSignalWithData(&myStruct{
+		Boolean: false,
+		Integer: 5,
+		String: "Will not show",
+	})
+
+	time.Sleep(1 * time.Second)
+
+	fmt.Println("Action 2")
+	d.SendSignalWithData(&myStruct{
+		Boolean: true,
+		Integer: 5,
+		String: "Will show because last one in wins!",
+	})
+
+	// After 5 seconds, the trigger will be called.
+	// Previous `SendSignal()` will be ignored to trigger the triggered function.
+	<-d.Done()
+}
+```
+
 # License
 
 MIT
@@ -140,12 +184,13 @@ MIT
 All your contributions to project and make it better, they are welcome. Feel free to start an [issue](https://github.com/vnteamopen/godebouncer/issues).
 
 Core contributors:
- - https://github.com/huyvohcmc
- - https://github.com/rnvo
- - https://github.com/ledongthuc
+
+- https://github.com/huyvohcmc
+- https://github.com/rnvo
+- https://github.com/ledongthuc
 
 # Thanks! 🙌
 
- - Viet Nam We Build group https://webuild.community for discussion.
+- Viet Nam We Build group https://webuild.community for discussion.
 
 [![Stargazers repo roster for @vnteamopen/godebouncer](https://reporoster.com/stars/vnteamopen/godebouncer)](https://github.com/vnteamopen/godebouncer/stargazers)
